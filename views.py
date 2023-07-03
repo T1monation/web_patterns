@@ -14,7 +14,7 @@ class View:
         """
         if not route.endswith("/"):
             route = route + "/"
-        self.routes[route] = f"templates/{template}"
+        self.routes[route] = template
 
     def get_view(self, path: str, request: dict):
         """
