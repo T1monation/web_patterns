@@ -15,10 +15,10 @@ fronts = [secret_front, other_front]
 
 # создаем "хранилище" путей и вьюх
 vievs = View()
-vievs.add_route("/", "authors.html")
-vievs.add_route("/a_page", "simplestyle_horizon_a_page.html")
-vievs.add_route("/contacts", "simplestyle_horizon_contact_us.html")
-vievs.add_route("/another", "simplestyle_horizon_another_page.html")
+vievs.add_route("/", "index.html")
+vievs.add_route("/authors", "authors.html")
+vievs.add_route("/contact_us", "contact_us.html")
+
 
 app = FrameWorkApp(vievs, fronts)
 
