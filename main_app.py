@@ -1,29 +1,42 @@
 from templator import render
 from views import View
+from frponts import Front
 
 
 class FrameWorkApp:
-    def __init__(self, views: View, fronts):
+    message_storage = list()
+
+    def __init__(self, views: View, fronts: Front):
         self.fronts = fronts
         self.views = views
 
     def __call__(self, environ, start_response):
         method = environ["REQUEST_METHOD"]
         print("method", method)
-        data = self.get_wsgi_input_data(environ)
-        print(data)
-        path = environ["PATH_INFO"]
-        request = {}
-        # front controller
-        for front in self.fronts:
-            front(request)
+        request = self.get_wsgi_input_data(environ)
         print(request)
-        code, body = self.views.get_view(path, request)
+        path = environ["PATH_INFO"]
+
+        processed_request = self.fronts.processing_request(request)
+        if "message" in processed_request:
+            self.message_storage.append(processed_request["message"])
+        processed_request["stored_messages"] = self.message_storage
+        print(request)
+        code, body = self.views.get_view(path, processed_request)
         start_response(code, [("Content-Type", "text/html")])
         return body
 
     @staticmethod
     def get_wsgi_input_data(env: dict) -> dict:
+        """
+        Функция для парсинга значений параметров из форм и адресной строки браузера
+        при запросах "GET" и "POST"
+        Args:
+            env (dict): словарь environ
+
+        Returns:
+            dict: словарь полученных параметров
+        """
         request = {}
         if env["REQUEST_METHOD"] == "GET":
             data = env["QUERY_STRING"]

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Messages{% endblock %}
+
+
+{% block main %}
+<h1>Полученные сообщения</h1>
+{% for el in object_list %}
+<hr>
+<h3>Сообщение от пользователя {{el[0]}}</h3>
+<h3>Тема сообщения: {{el[1]}}</h3>
+<h3>Текст сообщения: {{el[2]}}</h3>
+{% endfor %}
+<li></li>
+{% endblock %}
