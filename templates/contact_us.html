@@ -1,28 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
+{% block title %}Contacts us{% endblock %}
 
-<head>
-    <meta charset="utf-8">
-    <title>Message</title>
-</head>
 
-<body>
-    <div class="menu">
-        <ul>
-            <li><a href="/">Главная</a></li>
-            <li><a href="authors/">Авторы</a></li>
-            <li><a href="contact_us/">Сообщение</a></li>
-        </ul>
-    </div>
-    <form method="POST">
-        <p><b>Введите ваше сообщение:</b></p>
-        <p><input name="login">login получателя<Br>
-            <input name="title">тема сообщения<Br>
-            <input name="text">Текст сообщения
-        </p>
-        <p><input type="submit"></p>
-    </form>
-
-</body>
-
-</html>
+{% block main %}
+<form method="POST">
+    <p><b>Введите ваше сообщение:</b></p>
+    <p><input name="login">login получателя<Br>
+        <input name="title">тема сообщения<Br>
+        <input name="text">Текст сообщения
+    </p>
+    <p><input type="submit"></p>
+</form>
+{% endblock %}
