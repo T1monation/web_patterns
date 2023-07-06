@@ -3,21 +3,30 @@ from jinja2 import FileSystemLoader
 from jinja2.environment import Environment
 
 
-class View:
+class BasicView:
     """
-    Класс page-controller
+    Класс для показа статтичных страниц, без передачи параметров
+    """
+
+    def __call__(self, template, request):
+        return ViewRegister.render(template)
+
+
+class ViewRegister:
+    """
+    Класс-регистратор путей, шаблонов, и вьюх
     """
 
     routes = dict()
 
-    def add_route(self, route: str, template: str, view=None):
+    def add_route(self, route: str, template: str, view=BasicView()):
         """
         Метод добавления роута и файла шаблона для этого роута
         Шаблоны должны храниться в папке /templates
         Args:
             route (str): роут
             template (str): имя файла шаблона
-            view : пользовательская функция для обработки данных, по умалчанию None
+            view : пользовательский класс для обработки данных, по умалчанию BasicView
         """
         if not route.endswith("/"):
             route = f"{route}/"
@@ -38,20 +47,14 @@ class View:
             path = f"{path}/"
         if path in self.routes:
             # если не была добавленна пользовательская вьюха:
-            if not self.routes[path][1]:
-                return "200 OK", [bytes(self.render(self.routes[path][0]), "utf-8")]
-            else:
-                # если была добавленна пользовательская вьюха, вызываем ее, и результат отдаем как
-                # именнованный параметр
-                return "200 OK", [
-                    bytes(
-                        self.render(
-                            self.routes[path][0],
-                            object_list=self.routes[path][1](request),
-                        ),
-                        "utf-8",
-                    )
-                ]
+            # if not self.routes[path][1]:
+            #     return "200 OK", [bytes(self.render(self.routes[path][0]), "utf-8")]
+            # else:
+            # если была добавленна пользовательская вьюха, вызываем ее, и результат отдаем как
+            # именнованный параметр
+            return "200 OK", [
+                bytes(self.routes[path][1](self.routes[path][0], request), "utf-8")
+            ]
         else:
             return "404 WHAT", [b"404 PAGE Not Found"]
 

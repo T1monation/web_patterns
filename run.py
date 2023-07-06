@@ -1,7 +1,8 @@
 from wsgiref.simple_server import make_server
-from views import View
+from views import ViewRegister
 from frponts import Front
 from main_app import FrameWorkApp
+from user_views import MessageReader, CreateCategory, CreateProduct, ShowShop
 
 
 # Пользовательские фронт-контроллеры
@@ -43,14 +44,20 @@ fronts.add_front(other_front)
 fronts.add_front(find_message)
 
 # создаем "хранилище" путей и вьюх
-vievs = View()
-vievs.add_route("/", "index.html")
-vievs.add_route("/authors", "authors.html")
-vievs.add_route("/contact_us", "contact_us.html")
-vievs.add_route("/messages", "messages.html", show_message)
+views = ViewRegister()
+views.add_route("/", "index.html")
+views.add_route("/authors", "authors.html")
+views.add_route("/contact_us", "contact_us.html")
+views.add_route("/messages", "messages.html", MessageReader())
+views.add_route("/admin", "admin_start.html")
+views.add_route(
+    "/admin/create_category", "admin_create_category.html", CreateCategory()
+)
+views.add_route("/admin/create_product", "admin_create_product.html", CreateProduct())
+views.add_route("/shop", "shop.html", ShowShop())
 
 
-app = FrameWorkApp(vievs, fronts)
+app = FrameWorkApp(views, fronts)
 
 
 with make_server("", 8000, app) as httpd:
