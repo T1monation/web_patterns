@@ -1,0 +1,32 @@
+{% extends "admin_base.html" %}
+{% block title %}Admin pannel{% endblock %}
+
+
+{% block main %}
+<h2>Страничка для добавления категорий, товаров в наш магазинчик</h2>
+<hr>
+<h3>добавить товара:</h3>
+<form method="post">
+    Категория товара:<br>
+    <select name="selected_category">
+        {% for el in categories %}
+        <option value={{ el.name }}>{{ el.name }}</option>
+        {% endfor %}
+    </select><br>
+    Тип товара:<br>
+    <select name="selected_product_type">
+        {% for type in product_types %}
+        <option value={{ type }}>{{ type }}</option>
+        {% endfor %}
+    </select><br>
+    <br>
+    Название товара:<br>
+    <input type="text" name="product_name"><br>
+    Цена:<br>
+    <input type="text" name="product_prise"><br>
+    <button type="submit">Создать товар</button>
+
+</form>
+
+
+{% endblock %}

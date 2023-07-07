@@ -1,12 +1,13 @@
+from quopri import decodestring
 from templator import render
-from views import View
+from views import ViewRegister
 from frponts import Front
 
 
 class FrameWorkApp:
     message_storage = list()
 
-    def __init__(self, views: View, fronts: Front):
+    def __init__(self, views: ViewRegister, fronts: Front):
         self.fronts = fronts
         self.views = views
 
@@ -14,6 +15,7 @@ class FrameWorkApp:
         method = environ["REQUEST_METHOD"]
         print("method", method)
         request = self.get_wsgi_input_data(environ)
+        request["method"] = environ["REQUEST_METHOD"]
         print(request)
         path = environ["PATH_INFO"]
 
@@ -64,4 +66,15 @@ class FrameWorkApp:
             # делим ключ и значение через =
             k, v = item.split("=")
             request[k] = v
-        return request
+        returned_request = FrameWorkApp.decode_value(request)
+
+        return returned_request
+
+    @staticmethod
+    def decode_value(data):
+        new_data = {}
+        for k, v in data.items():
+            val = bytes(v.replace("%", "=").replace("+", " "), "UTF-8")
+            val_decode_str = decodestring(val).decode("UTF-8")
+            new_data[k] = val_decode_str
+        return new_data

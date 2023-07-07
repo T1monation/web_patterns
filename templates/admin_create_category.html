@@ -1,0 +1,15 @@
+{% extends "admin_base.html" %}
+{% block title %}Admin pannel{% endblock %}
+
+
+{% block main %}
+<h2>Страничка для добавления категорий, товаров в наш магазинчик</h2>
+<hr>
+<h3>Добавить категрию товара:</h3>
+<form method="POST">
+    Категория товара:<br>
+    <input type="text" name="product_category"><br>
+    <input type="submit" value="Создать">
+</form>
+
+{% endblock %}

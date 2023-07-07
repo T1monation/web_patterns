@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Index{% endblock %}
+
+
+{% block main %}
+<h1>Наш магазин предлогает:</h1>
+<div class="shop">
+    <div class="categories">
+        <h4>Каталог: </h4>
+        <form method="post">
+            <ul>
+                {% for key in categories %}
+                <li><button type="submit" name="find_category" value={{ key }}>{{ key }}</button></li>
+                {% endfor %}
+            </ul>
+        </form>
+    </div>
+    <div class="products"></div>
+    <h4>доступные товары:</h4>
+    <ul>
+        {% for el in product_list %}
+        <div class="product">
+            Товар: <br>
+            {{ el.name }} <br>
+            Цена товара: <br>
+            {{ el.price }} <br>
+        </div>
+        {% endfor %}
+    </ul>
+</div>
+
+{% endblock %}
