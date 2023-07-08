@@ -1,5 +1,5 @@
-from jinja2 import Template
 from jinja2 import FileSystemLoader
+from time import time
 from jinja2.environment import Environment
 
 
@@ -8,59 +8,80 @@ class BasicView:
     Класс для показа статтичных страниц, без передачи параметров
     """
 
-    def __call__(self, template, request):
-        return ViewRegister.render(template)
+    def __init__(self, template):
+        self.template = template
+
+    def __call__(self, *args, **kwargs):
+        return "200 OK", render(self.template)
 
 
-class ViewRegister:
+class AppRoute:
+    def __init__(self, routes, url):
+        """
+        Сохраняем значение переданного параметра
+        """
+        if not url.endswith("/"):
+            url = f"{url}/"
+        self.routes = routes
+        self.url = url
+
+    def __call__(self, cls):
+        """
+        Сам декоратор
+        """
+        self.routes[self.url] = cls()
+
+
+class SimpleTemplateRoute:
     """
-    Класс-регистратор путей, шаблонов, и вьюх
+    Класс для обработки простых шаблонов
     """
 
-    routes = dict()
-
-    def add_route(self, route: str, template: str, view=BasicView()):
+    def __init__(self, routes_storage: dict, register_routes: dict) -> None:
         """
-        Метод добавления роута и файла шаблона для этого роута
-        Шаблоны должны храниться в папке /templates
+
         Args:
-            route (str): роут
-            template (str): имя файла шаблона
-            view : пользовательский класс для обработки данных, по умалчанию BasicView
+            routes_storage (dict): Переменная-словарь  вида {"путь": "вьюха"}
+            register_routes (dict): Переменная-словарь вида {"путь": "файл шаблона"}
         """
-        if not route.endswith("/"):
-            route = f"{route}/"
-        self.routes[route] = (template, view)
+        for key, value in register_routes.items():
+            if not key.endswith("/"):
+                key = f"{key}/"
+            routes_storage[key] = BasicView(value)
 
-    def get_view(self, path: str, request: dict):
+
+class Debug:
+    def __init__(self, name):
+        self.name = name
+
+    def __call__(self, cls):
         """
-        Метод, который ищет и возвращает view по роуту,
-        или возвращает 404
-        Args:
-            path (str): роут для поиска
-            request (dict): словарь с параметрами
-
-        Returns:
-            (tuple): строка с кодом ответа, view  в байтах
+        сам декоратор
         """
-        if not path.endswith("/"):
-            path = f"{path}/"
-        if path in self.routes:
-            # если не была добавленна пользовательская вьюха:
-            # if not self.routes[path][1]:
-            #     return "200 OK", [bytes(self.render(self.routes[path][0]), "utf-8")]
-            # else:
-            # если была добавленна пользовательская вьюха, вызываем ее, и результат отдаем как
-            # именнованный параметр
-            return "200 OK", [
-                bytes(self.routes[path][1](self.routes[path][0], request), "utf-8")
-            ]
-        else:
-            return "404 WHAT", [b"404 PAGE Not Found"]
 
-    @staticmethod
-    def render(template_name, folder="templates", **kwargs):
-        env = Environment()
-        env.loader = FileSystemLoader(folder)
-        template = env.get_template(template_name)
-        return template.render(**kwargs)
+        # это вспомогательная функция будет декорировать каждый отдельный метод класса, см. ниже
+        def timeit(method):
+            """
+            нужен для того, чтобы декоратор класса wrapper обернул в timeit
+            каждый метод декорируемого класса
+            """
+
+            def timed(*args, **kw):
+                ts = time()
+                result = method(*args, **kw)
+                te = time()
+                delta = te - ts
+
+                print(f"debug --> {self.name} выполнялся {delta:2.2f} ms")
+                return result
+
+            return timed
+
+        return timeit(cls)
+
+
+def render(template_name, folder="templates", **kwargs):
+    env = Environment()
+    env.loader = FileSystemLoader(folder)
+    template = env.get_template(template_name)
+    return template.render(**kwargs)
