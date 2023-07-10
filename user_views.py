@@ -88,16 +88,62 @@ class ShowShop:
                 message=f"В каталоге пока пусто!",
             )
         else:
+            tree = engine.get_tree
             all_categories = []
             for category in engine.categories:
                 all_categories.append(category.name)
             if request["method"] == "GET":
-                return "200 OK", render("shop.html", categories=all_categories)
+                return "200 OK", render("shop.html", tree=tree)
             if request["method"] == "POST":
                 find_category = request["find_category"]
                 product_list = [
                     el for el in engine.products if el.category == find_category
                 ]
                 return "200 OK", render(
-                    "shop.html", categories=all_categories, product_list=product_list
+                    "shop.html", tree=tree, product_list=product_list
                 )
+
+
+@AppRoute(routes=routes, url="/admin/create_tree")
+class MakeTree:
+    @Debug(name="MakeTree")
+    def __call__(self, request):
+        if request["method"] == "GET":
+            if len(engine.categories) == 0:
+                return "200 OK", render(
+                    "admin_message_template.html",
+                    message=f"Категории еще  не созданны.",
+                )
+            parrent_categories = engine.categories
+            child_categories = [
+                el for el in engine.categories if el.id not in engine.category_tree
+            ]
+            return "200 OK", render(
+                "admin_create_tree.html",
+                parrent_categories=parrent_categories,
+                child_categories=child_categories,
+            )
+        if request["method"] == "POST":
+            if request["parrent_category"] == request["child_category"]:
+                return "200 OK", render(
+                    "admin_message_template.html",
+                    message=f"Родительская и дочерняя категории не могут быть одинаковыми",
+                )
+            if request["child_category"] in engine.category_tree:
+                return "200 OK", render(
+                    "admin_message_template.html",
+                    message=f"Категория {request['child_category']} уже добавленна в дерево как родительская.",
+                )
+            if request["parrent_category"]:
+                engine.add_to_tree(
+                    engine.find_category_by_name(request["parrent_category"]),
+                    engine.find_category_by_name(request["child_category"]),
+                )
+                return "200 OK", render(
+                    "admin_message_template.html",
+                    message=f"Элемент дерева успешно добавлен",
+                )
+            return "500", render(
+                "admin_message_template.html",
+                message=f"что-то пошло не так(",
+            )

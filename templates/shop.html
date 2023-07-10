@@ -9,8 +9,13 @@
         <h4>Каталог: </h4>
         <form method="post">
             <ul>
-                {% for key in categories %}
-                <li><button type="submit" name="find_category" value={{ key }}>{{ key }}</button></li>
+                {% for el in tree %}
+                <li>
+                    <h2>{{ el[0].name }}</h2>
+                </li>
+                {% for item in el[1] %}
+                <li><button type="submit" name="find_category" value={{ item.name }}>---{{ item.name }}</button></li>
+                {% endfor %}
                 {% endfor %}
             </ul>
         </form>
