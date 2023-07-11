@@ -124,6 +124,7 @@ class Engine:
         self.stuff = []
         self.products = []
         self.categories = []
+        self.category_tree = dict()
 
     @staticmethod
     def create_user(role: str):
@@ -206,6 +207,29 @@ class Engine:
         val_b = bytes(val.replace("%", "=").replace("+", " "), "UTF-8")
         val_decode_str = decodestring(val_b)
         return val_decode_str.decode("UTF-8")
+
+    def add_to_tree(self, parrent: Category, child: Category = None):
+        if not child:
+            self.category_tree[str(parrent.id)] = []
+        else:
+            if str(parrent.id) in self.category_tree:
+                self.category_tree[str(parrent.id)].append(str(child.id))
+            else:
+                self.category_tree[str(parrent.id)] = [str(child.id)]
+
+    @property
+    def get_tree(self):
+        print(self.category_tree)
+        returned_list = []
+        for key in self.category_tree:
+            returned_list.append(
+                [
+                    self.find_category_by_name(key),
+                    [self.find_category_by_name(el) for el in self.category_tree[key]],
+                ]
+            )
+        print(returned_list)
+        return returned_list
 
 
 # порождающий паттерн Синглтон

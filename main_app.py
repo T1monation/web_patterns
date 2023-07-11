@@ -1,15 +1,19 @@
 from quopri import decodestring
 from templator import render
-from views import ViewRegister
 from frponts import Front
+
+
+class Page404:
+    def __call__(self, request):
+        return "404 WHAT", "404 PAGE Not Found"
 
 
 class FrameWorkApp:
     message_storage = list()
 
-    def __init__(self, views: ViewRegister, fronts: Front):
+    def __init__(self, routes: dict, fronts: Front):
         self.fronts = fronts
-        self.views = views
+        self.routes = routes
 
     def __call__(self, environ, start_response):
         method = environ["REQUEST_METHOD"]
@@ -18,15 +22,21 @@ class FrameWorkApp:
         request["method"] = environ["REQUEST_METHOD"]
         print(request)
         path = environ["PATH_INFO"]
+        if not path.endswith("/"):
+            path = f"{path}/"
 
+        if path in self.routes:
+            view = self.routes[path]
+        else:
+            view = Page404()
         processed_request = self.fronts.processing_request(request)
         if "message" in processed_request:
             self.message_storage.append(processed_request["message"])
         processed_request["stored_messages"] = self.message_storage
         print(request)
-        code, body = self.views.get_view(path, processed_request)
+        code, body = view(processed_request)
         start_response(code, [("Content-Type", "text/html")])
-        return body
+        return [body.encode("utf-8")]
 
     @staticmethod
     def get_wsgi_input_data(env: dict) -> dict:

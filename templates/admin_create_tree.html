@@ -1,0 +1,28 @@
+{% extends "admin_base.html" %}
+{% block title %}Admin pannel{% endblock %}
+
+
+{% block main %}
+<h2>Создать дерево каталога</h2>
+<hr>
+<h3>добавить товара:</h3>
+<form method="post">
+    Родительский элемент каталога:<br>
+    <select name="parrent_category">
+        {% for el in parrent_categories %}
+        <option value={{ el.name }}>{{ el.name }}</option>
+        {% endfor %}
+    </select><br>
+    Дочерний элемент каталога:<br>
+    <select name="child_category">
+        {% for el in child_categories %}
+        <option value={{ el.name }}>{{ el.name }}</option>
+        {% endfor %}
+    </select><br>
+
+    <button type="submit">Создать</button>
+
+</form>
+
+
+{% endblock %}
