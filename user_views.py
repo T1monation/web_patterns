@@ -1,5 +1,6 @@
 # Файл с пользовательскими вьюхами
-from views import AppRoute, Debug, render
+from views import render
+from patterns.decorators import AppRoute, Debug
 from patterns.creation import Engine
 
 

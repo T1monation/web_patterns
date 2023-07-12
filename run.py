@@ -1,5 +1,5 @@
 from wsgiref.simple_server import make_server
-from views import SimpleTemplateRoute
+from patterns.decorators import SimpleTemplateRoute
 from frponts import Front
 from main_app import FrameWorkApp
 from user_views import routes, MessageReader, CreateCategory, CreateProduct, ShowShop

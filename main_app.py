@@ -1,5 +1,4 @@
 from quopri import decodestring
-from templator import render
 from frponts import Front
 
 
