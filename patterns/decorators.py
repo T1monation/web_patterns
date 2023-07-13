@@ -1,3 +1,7 @@
+from time import time
+from patterns.render import render
+
+
 class AppRoute:
     def __init__(self, routes, url):
         """
@@ -61,3 +65,15 @@ class Debug:
             return timed
 
         return timeit(cls)
+
+
+class BasicView:
+    """
+    Класс для показа статтичных страниц, без передачи параметров
+    """
+
+    def __init__(self, template):
+        self.template = template
+
+    def __call__(self, *args, **kwargs):
+        return "200 OK", render(self.template)

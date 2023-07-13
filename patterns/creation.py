@@ -1,5 +1,7 @@
 from copy import deepcopy
 from quopri import decodestring
+from patterns.behavior import Subject, FileWriter
+from time import ctime, time
 
 
 class User:
@@ -45,8 +47,8 @@ class ProductPrototype:
         return deepcopy(self)
 
 
-class Product(ProductPrototype):
-    def __init__(self, name: str, category: str, prise: str):
+class Product(ProductPrototype, Subject):
+    def __init__(self, name: str, category: str, price: str):
         """
         Экземпляр класса Product
         Args:
@@ -56,8 +58,19 @@ class Product(ProductPrototype):
         """
         self.name = name
         self.category = category
-        self.prise = prise
+        self.price = float(price)
         self.category = category
+        super().__init__()
+
+    def set_price(self, percent):
+        """
+        метод корректировки цены
+        Args:
+            percent : значение в процентах, на которое меняеться цена товара
+        """
+        self.percent = percent
+        self.price = self.price * (100 - float(percent)) / 100
+        self.notify()
 
 
 class Ram(Product):
@@ -110,6 +123,13 @@ class Category:
         self.name = name
         self.category = category
         self.products = []
+
+    def __getitem__(self, item):
+        return self.products[item]
+
+    def add_product(self, product: Product):
+        self.products.append(product)
+        product.category = self.name
 
     def products_count(self):
         result = len(self.products)
@@ -251,10 +271,11 @@ class SingletonByName(type):
             return cls.__instance[name]
 
 
-class Sotorage(metaclass=SingletonByName):
-    def __init__(self, name):
+class Logger(metaclass=SingletonByName):
+    def __init__(self, name, writer=FileWriter()):
         self.name = name
+        self.writer = writer
 
-    @staticmethod
-    def log(text):
-        print("log--->", text)
+    def log(self, text):
+        text = f"log---> {text} [{ctime(time())}]"
+        self.writer.write(text)

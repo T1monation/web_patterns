@@ -9,29 +9,30 @@
         <h4>Каталог: </h4>
         <form method="post">
             <ul>
-                {% for el in tree %}
+                {% for category in categories %}
                 <li>
-                    <h2>{{ el[0].name }}</h2>
+                    <button type="submit" name="find_category" value={{ category.name }}>{{ category.name }}</button>
                 </li>
-                {% for item in el[1] %}
-                <li><button type="submit" name="find_category" value={{ item.name }}>---{{ item.name }}</button></li>
-                {% endfor %}
                 {% endfor %}
             </ul>
         </form>
     </div>
     <div class="products"></div>
+
     <h4>доступные товары:</h4>
     <ul>
         {% for el in product_list %}
-        <div class="product">
-            Товар: <br>
-            {{ el.name }} <br>
-            Цена товара: <br>
-            {{ el.price }} <br>
-        </div>
+        <li>
+            <div class="product">
+                Товар: <br>
+                {{ el.name }} <br>
+                Цена товара: <br>
+                {{ el.price }} <br>
+            </div>
+        </li>
         {% endfor %}
     </ul>
+
 </div>
 
 {% endblock %}

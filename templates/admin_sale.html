@@ -1,0 +1,22 @@
+{% extends "admin_base.html" %}
+{% block title %}Admin pannel{% endblock %}
+
+
+{% block main %}
+<h2>Установить скидку на товар</h2>
+<hr>
+<form method="post">
+    выбор товара::<br>
+    <select name="product_on_sale">
+        {% for el in products %}
+        <option value={{ el.name }}>{{ el.name }}</option>
+        {% endfor %}
+    </select><br>
+
+    <input type="text" name="sale_value">
+    <button type="submit">Создать</button>
+
+</form>
+
+
+{% endblock %}
