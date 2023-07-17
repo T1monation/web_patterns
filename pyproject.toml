@@ -9,6 +9,7 @@ license = "MIT"
 python = "^3.10"
 uWSGI = "^2.0.21"
 Jinja2 = "^3.1.2"
+jsonpickle = "^3.0.1"
 
 [tool.poetry.dev-dependencies]
 
