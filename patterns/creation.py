@@ -1,7 +1,11 @@
 from copy import deepcopy
 from quopri import decodestring
-from patterns.behavior import Subject, FileWriter
+from sqlite3 import connect
 from time import ctime, time
+from patterns.behavior import Subject, FileWriter
+from patterns.unit_of_work import DomainObject
+
+connection = connect("patterns.sqlite")
 
 
 class User:
@@ -47,19 +51,21 @@ class ProductPrototype:
         return deepcopy(self)
 
 
-class Product(ProductPrototype, Subject):
-    def __init__(self, name: str, category: str, price: str):
+class Product(ProductPrototype, Subject, DomainObject):
+    def __init__(self, name: str, category: str, price: str, percent=0):
         """
         Экземпляр класса Product
         Args:
             name (str): наименование товара
             category (str): категория товара
             prise (str): цена товара
+            percent (int): процент скидки на товар
         """
         self.name = name
         self.category = category
         self.price = float(price)
         self.category = category
+        self.percent = percent
         super().__init__()
 
     def set_price(self, percent):
@@ -93,7 +99,7 @@ class ProductFactory:
     }
 
     @classmethod
-    def create(cls, product_type: str, name: str, categoty: str, prise: str):
+    def create(cls, name: str, categoty: str, prise: str):
         """
         Создание экземпляра класса товара
         Args:
@@ -108,10 +114,10 @@ class ProductFactory:
         return cls.product_types[product_type](name, categoty, prise)
 
 
-class Category:
+class Category(DomainObject):
     auto_id = 0
 
-    def __init__(self, name: str, category: str):
+    def __init__(self, name: str):
         """
         Инициализация класса Category
         Args:
@@ -121,7 +127,6 @@ class Category:
         self.id = Category.auto_id
         Category.auto_id += 1
         self.name = name
-        self.category = category
         self.products = []
 
     def __getitem__(self, item):
@@ -130,12 +135,6 @@ class Category:
     def add_product(self, product: Product):
         self.products.append(product)
         product.category = self.name
-
-    def products_count(self):
-        result = len(self.products)
-        if self.category:
-            result += self.category.products_count()
-        return result
 
 
 class Engine:
@@ -159,8 +158,8 @@ class Engine:
         return UserFactory.create(role)
 
     @staticmethod
-    def create_category(name, category=None):
-        return Category(name, category)
+    def create_category(name):
+        return Category(name)
 
     def find_category_by_id(self, id: int):
         """
@@ -196,8 +195,8 @@ class Engine:
         return None
 
     @staticmethod
-    def create_product(product_type, name, category, prise):
-        return ProductFactory.create(product_type, name, category, prise)
+    def create_product(name, category, prise):
+        return ProductFactory.create(name, category, prise)
 
     def get_product(self, name: str):
         """
@@ -279,3 +278,160 @@ class Logger(metaclass=SingletonByName):
     def log(self, text):
         text = f"log---> {text} [{ctime(time())}]"
         self.writer.write(text)
+
+
+class DbCommitException(Exception):
+    def __init__(self, message):
+        super().__init__(f"Db commit error: {message}")
+
+
+class DbUpdateException(Exception):
+    def __init__(self, message):
+        super().__init__(f"Db update error: {message}")
+
+
+class DbDeleteException(Exception):
+    def __init__(self, message):
+        super().__init__(f"Db delete error: {message}")
+
+
+class RecordNotFoundException(Exception):
+    def __init__(self, message):
+        super().__init__(f"Record not found: {message}")
+
+
+class ProductMapper:
+    def __init__(self, connection):
+        self.connection = connection
+        self.cursor = connection.cursor()
+        self.tablename = "product"
+
+    def all(self):
+        statement = f"SELECT * from {self.tablename}"
+        self.cursor.execute(statement)
+        result = []
+        for item in self.cursor.fetchall():
+            id, name, category, price, percent = item
+            product = Product(name, category, price)
+            product.id = id
+            product.percent = percent
+            result.append(product)
+
+    def find_by_id(self, id):
+        statement = f"SELECT id, name, category, price, percent  FROM {self.tablename} WHERE id=?"
+        self.cursor.execute(statement, (id,))
+        result = self.cursor.fetchone()
+        if result:
+            return Product(*result)
+        else:
+            raise RecordNotFoundException(f"record with id={id} not found")
+
+    def find_by_category_name(self, name):
+        statement = f"SELECT id, name, category, price, percent  FROM {self.tablename} WHERE category=?"
+        self.cursor.execute(statement, (name,))
+        result = []
+        for item in self.cursor.fetchall():
+            id, name, category, price, percent = item
+            product = Product(name, category, price, percent)
+            product.id = id
+            result.append(product)
+        if len(result) > 0:
+            return result
+        else:
+            raise RecordNotFoundException(f"record with name={name} not found")
+
+    def insert(self, obj):
+        statement = f"INSERT INTO {self.tablename} (name, category, price, percent) VALUES (?, ?, ?, ?)"
+        self.cursor.execute(statement, (obj.name, obj.category, obj.price, obj.percent))
+        try:
+            self.connection.commit()
+        except Exception as e:
+            raise DbCommitException(e.args)
+
+    def update(self, obj):
+        statement = (
+            f"UPDATE {self.tablename} SET name={obj.name}, category={obj.category}, "
+            f"price={obj.price}, percent={obj.percent}  WHERE id={obj.id}"
+        )
+
+        self.cursor.execute(statement, (obj.name, obj.id))
+        try:
+            self.connection.commit()
+        except Exception as e:
+            raise DbUpdateException(e.args)
+
+    def delete(self, obj):
+        statement = f"DELETE FROM {self.tablename} WHERE id=?"
+        self.cursor.execute(statement, (obj.id,))
+        try:
+            self.connection.commit()
+        except Exception as e:
+            raise DbDeleteException(e.args)
+
+
+class CategoryMapper:
+    def __init__(self, connection):
+        self.connection = connection
+        self.cursor = connection.cursor()
+        self.tablename = "category"
+
+    def all(self):
+        statement = f"SELECT * from {self.tablename}"
+        self.cursor.execute(statement)
+        result = []
+        for item in self.cursor.fetchall():
+            id, name = item
+            category = Category(name)
+            category.id = id
+            result.append(category)
+        return result
+
+    def find_by_id(self, id):
+        statement = f"SELECT id, name FROM {self.tablename} WHERE id=?"
+        self.cursor.execute(statement, (id,))
+        result = self.cursor.fetchone()
+        if result:
+            return Product(*result)
+        else:
+            raise RecordNotFoundException(f"record with id={id} not found")
+
+    def insert(self, obj):
+        statement = f"INSERT INTO {self.tablename} (name) VALUES (?)"
+        self.cursor.execute(statement, (obj.name,))
+        try:
+            self.connection.commit()
+        except Exception as e:
+            raise DbCommitException(e.args)
+
+    def update(self, obj):
+        statement = f"UPDATE {self.tablename} SET name={obj.name}, WHERE id={obj.id}"
+
+        self.cursor.execute(statement, (obj.name, obj.id))
+        try:
+            self.connection.commit()
+        except Exception as e:
+            raise DbUpdateException(e.args)
+
+    def delete(self, obj):
+        statement = f"DELETE FROM {self.tablename} WHERE id=?"
+        self.cursor.execute(statement, (obj.id,))
+        try:
+            self.connection.commit()
+        except Exception as e:
+            raise DbDeleteException(e.args)
+
+
+# архитектурный системный паттерн - Data Mapper
+class MapperRegistry:
+    mappers = {"product": ProductMapper, "category": CategoryMapper}
+
+    @staticmethod
+    def get_mapper(obj):
+        if isinstance(obj, Product):
+            return ProductMapper(connection)
+        if isinstance(obj, Category):
+            return CategoryMapper(connection)
+
+    @staticmethod
+    def get_current_mapper(name):
+        return MapperRegistry.mappers[name](connection)
