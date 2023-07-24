@@ -1,0 +1,51 @@
+version: "2.14"
+
+services:
+  1_sales_django:
+    build: ./smartshop_services/step1_sales_django
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - 8000:8000
+    restart: on-failure
+    networks:
+      network:
+        ipv4_address: 10.5.0.5
+  2_orders_flask:
+    build: ./smartshop_services/step2_orders_flask
+    command: flask --app main.py run --host=0.0.0.0
+    ports:
+      - 5000:5000
+    restart: on-failure
+    depends_on:
+      - 3_rabbit
+    networks:
+      network:
+        ipv4_address: 10.5.0.6
+  3_rabbit:
+    build: ./rabbitmq/
+    ports:
+      - 15671:15671
+      - 5672:5672
+    restart: on-failure
+    networks:
+      network:
+        ipv4_address: 10.5.0.7
+  4_repair_app:
+    build: ./smartshop_services/step3_rapair_rabbit
+    command: python main.py
+    depends_on:
+      - 1_sales_django
+      - 2_orders_flask
+      - 3_rabbit
+    restart: on-failure
+    networks:
+      network:
+        ipv4_address: 10.5.0.8
+
+networks:
+  network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16
+          gateway: 10.5.0.1
