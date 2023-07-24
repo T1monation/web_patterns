@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Main</title>
+</head>
+<body>
+<h1>Smart Shop</h1>
+<ul>
+    {% for item in object_list %}
+    <li>
+        {{item.brand.name}} {{item.name}} <span><a href="{% url 'sale' pk=item.pk %}">Buy</a></span> <span><a href="{% url 'repair' pk=item.pk %}">Repair</a></span>
+    </li>
+    {% endfor %}
+</ul>
+</body>
+</html>
