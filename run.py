@@ -27,14 +27,6 @@ def find_message(request: dict):
         request.pop("text")
 
 
-# Пользовательская Вьюха
-def show_message(request):
-    if "stored_messages" in request:
-        return request["stored_messages"]
-    else:
-        return None
-
-
 # создаем хранилище фронтов и наполняем его пользовательсекими фронтами
 fronts = Front()
 fronts.add_front(secret_front)

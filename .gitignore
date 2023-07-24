@@ -139,3 +139,5 @@ __pycache__
 
 
 log
+
+patterns.sqlite

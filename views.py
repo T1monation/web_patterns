@@ -1,8 +1,9 @@
 # Файл с пользовательскими вьюхами
 from patterns.decorators import render
 from patterns.decorators import AppRoute, Debug
-from patterns.creation import Engine, Logger
+from patterns.creation import Engine, Logger, MapperRegistry, Product
 from patterns.behavior import SmsNotifier, EmailNotifier, BaseSerializer
+from patterns.unit_of_work import UnitOfWork
 
 
 engine = Engine()
@@ -10,6 +11,8 @@ routes = dict()
 email_notifier = EmailNotifier()
 sms_notifier = SmsNotifier()
 logger = Logger("framework")
+UnitOfWork.new_current()
+UnitOfWork.get_current().set_mapper_registry(MapperRegistry)
 
 
 @AppRoute(routes=routes, url="/messages/")
@@ -41,11 +44,20 @@ class CreateCategory:
 
             if not find_category:
                 new_category = engine.create_category(name)
-                engine.categories.append(new_category)
-                logger.log(f"категория {name} созданна")
-                return "200 OK", render(
-                    "admin_message_template.html", message=f"Категория {name} созданна!"
-                )
+                # engine.categories.append(new_category)
+                new_category.mark_new()
+                try:
+                    UnitOfWork.get_current().commit()
+                except Exception as e:
+                    return "500 OK", render(
+                        "admin_message_template.html", message=f"Ошибка: {e}"
+                    )
+                else:
+                    logger.log(f"категория {name} созданна")
+                    return "200 OK", render(
+                        "admin_message_template.html",
+                        message=f"Категория {name} созданна!",
+                    )
 
             else:
                 return "200 OK", render(
@@ -59,30 +71,33 @@ class CreateProduct:
     @Debug(name="CreateProduct")
     def __call__(self, request):
         if request["method"] == "GET":
+            print(MapperRegistry.get_current_mapper("category").all())
             return "200 OK", render(
                 "admin_create_product.html",
-                categories=engine.categories,
-                product_types=engine.get_product_type(),
+                categories=MapperRegistry.get_current_mapper("category").all(),
             )
         if request["method"] == "POST":
             if not engine.get_product(request["product_name"]):
-                new_product = engine.create_product(
-                    request["selected_product_type"],
+                new_product = Product(
                     request["product_name"],
                     request["selected_category"],
                     request["product_prise"],
                 )
                 new_product.observers.append(email_notifier)
                 new_product.observers.append(sms_notifier)
-                engine.products.append(new_product)
-                engine.find_category_by_name(request["selected_category"]).add_product(
-                    new_product
-                )
-                logger.log(f"товар {request['product_name']} добавлен в каталог")
-                return "200 OK", render(
-                    "admin_message_template.html",
-                    message=f"Товар {request['product_name']} добавлен в каталог",
-                )
+                new_product.mark_new()
+                try:
+                    UnitOfWork.get_current().commit()
+                except Exception as e:
+                    return "500 OK", render(
+                        "admin_message_template.html", message=f"Ошибка: {e}"
+                    )
+                else:
+                    logger.log(f"товар {request['product_name']} добавлен в каталог")
+                    return "200 OK", render(
+                        "admin_message_template.html",
+                        message=f"Товар {request['product_name']} добавлен в каталог",
+                    )
             else:
                 return "200 OK", render(
                     "admin_message_template.html",
@@ -94,26 +109,31 @@ class CreateProduct:
 class ShowShop:
     @Debug(name="ShowShop")
     def __call__(self, request):
-        if len(engine.categories) == 0:
+        mapper = MapperRegistry.get_current_mapper("category")
+        categories = mapper.all()
+        if len(categories) == 0:
             return "200 OK", render(
                 "message_template.html",
                 message=f"В каталоге пока пусто!",
             )
         else:
             if request["method"] == "GET":
-                return "200 OK", render("shop.html", categories=engine.categories)
+                return "200 OK", render("shop.html", categories=categories)
             if request["method"] == "POST":
-                print(engine.products)
-                print(request["find_category"])
-                product_list = [
-                    el
-                    for el in engine.products
-                    if el.category == request["find_category"]
-                ]
-                print(product_list)
-                return "200 OK", render(
-                    "shop.html", categories=engine.categories, product_list=product_list
-                )
+                mapper = MapperRegistry.get_current_mapper("product")
+                try:
+                    product_list = mapper.find_by_category_name(
+                        request["find_category"]
+                    )
+                except Exception as e:
+                    return "200 OK", render(
+                        "admin_message_template.html",
+                        message=f"В категории {request['find_category']} товаров еще нет",
+                    )
+                else:
+                    return "200 OK", render(
+                        "shop.html", categories=categories, product_list=product_list
+                    )
 
 
 @AppRoute(routes=routes, url="/admin/create_tree")
